@@ -110,6 +110,7 @@ def auth_controller():
     window = sg.Window('Controller Configurator', layout1, finalize=True, enable_close_attempted_event=True)
     window['Status'].my_bg = sg.theme_text_element_background_color()
     status = window['Status']
+    status.update(visible=False)
     event, values = window.read()
     user = values['user']
     passd = values['passd']
@@ -126,12 +127,14 @@ def auth_controller():
     session = requests.session()
     response = session.post(endpoint, data=payload, headers=headers, verify=False)
     if (200 <= response.status_code <= 210):
+        status.update(visible=True)
         status.update("login successful")
         window['Status'].update(background_color='green')
         window.refresh()
         time.sleep(1)
         window.close()
     else:
+        status.update(visible=True)
         status.update("Try to login again.....")
         window['Status'].update(background_color='red')
         window.refresh()
@@ -143,11 +146,6 @@ def auth_controller():
 
 ### create new GW
 def create_gw(session,hostname,gw_name,instance_group,environment,cert_choosen):
-    #print("hostname",hostname)
-    #print("gw_name",gw_name)
-    #print("instance_group",instance_group)
-    #print("environment",environment)
-    #print("cert_choosen",cert_choosen)
     payload = {
       "metadata": {
         "name": gw_name,
