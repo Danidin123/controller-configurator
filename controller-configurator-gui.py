@@ -300,7 +300,7 @@ def create_comp(session,app_name,gw_name,environment,backed_url):
               "directive": "access_log",
               "args": [
                 "syslog:server=10.32.6.56:516,tag=nginx_access",
-                "ssyslog-adasha"
+                "syslog-adasha"
               ]
             },
             {
@@ -319,7 +319,7 @@ def create_comp(session,app_name,gw_name,environment,backed_url):
               "directive": "app_protect_security_log",
               "args": [
                 "/var/log/nap-format.json",
-                "yslog:server=10.32.6.56:515"
+                "syslog:server=10.32.6.56:515"
               ]
             }
           ]
