@@ -328,7 +328,7 @@ def create_comp(session,app_name,gw_name,environment,backed_url):
     },
     "security": {
       "strategyRef": {
-        "ref": "/security/strategies/default-xff-strategy"
+        "ref": "/security/strategies/default_policy_with_xff"
       },
       "waf": {
         "isEnabled": True
