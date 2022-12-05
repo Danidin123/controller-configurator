@@ -318,7 +318,7 @@ def create_comp(session,app_name,gw_name,environment,backed_url):
             {
               "directive": "app_protect_security_log",
               "args": [
-                "/var/log/nap-format.json",
+                "/etc/nginx/custom_log_format.json",
                 "syslog:server=10.32.6.56:515"
               ]
             }
