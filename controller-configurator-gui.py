@@ -6,38 +6,42 @@ import json
 from getpass import getpass
 import PySimpleGUI as sg
 
+
+PSG_THEME="Reddit"
+FONT = ("Arial", 14)
+FONT2 = ("Arial", 12)
+progress=0
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 ####### neet to change it #######
-CONTROLLER_FQDN="https://nginxcontroller.westeurope.cloudapp.azure.com"
+CONTROLLER_FQDN="https://nlb-nginx-controller-671e2f13e6cc79f5.elb.eu-west-1.amazonaws.com"
 
 def main_procedure():
   session = auth_controller()
+  print("one  session", session)
   app_name = get_app_name()
   gw_name = f"{app_name}-gw"
   instance_group = get_instance_group()
   if instance_group == '1':
     ####### neet to change it #######
-    instance_group = "david-test"
-    environment = "test"
+    instance_group = "test"
+    environment = "test_env"
   elif instance_group == '2':
     ####### neet to change it #######
-    instance_group = "david-test"
-    environment = "prod"
+    instance_group = "wafprod"
+    environment = "production"
   cert_choosen = get_cert(CONTROLLER_FQDN,session,environment)
   hostname,backed_url = hostname_backed_url()
-  create_gw(session,hostname,gw_name,instance_group,environment,cert_choosen)
-  time.sleep(5)
-  create_app(session,app_name,environment)
-  time.sleep(5)
-  create_comp(session,app_name,gw_name,environment,backed_url)
-  progress_bar('4', '4', 'DONE!!!')
-  time.sleep(3)
+  create_gw(session,hostname,gw_name,instance_group,environment,cert_choosen) #1
+  create_app(session,app_name,environment) #2
+  create_comp(session,app_name,gw_name,environment,backed_url) #3
+  progress_barnew(25,"DONE!!!",5)
 
-def progress_bar(x,y,status_update):
-  font = ("Arial", 14)
-  sg.theme('GreenMono')  # please make your windows colorful
-  column_to_be_centered = [[sg.Text('Configuring', key='status',font=font)],
+def progress_barnew(addition,status_update,sleep):
+  global progress
+  counter = 0
+  sg.theme(PSG_THEME)  # please make your windows colorful
+  column_to_be_centered = [[sg.Text('Configuring', key='status',font=FONT)],
                           [sg.ProgressBar(1, orientation='h', size=(40, 30), key='progress')],]
   layout = [[sg.VPush()],
             [sg.Push(), sg.Column(column_to_be_centered,element_justification='c'), sg.Push()],
@@ -45,21 +49,34 @@ def progress_bar(x,y,status_update):
   window = sg.Window('Controller Configurator', layout).Finalize()
   progress_bar = window['progress']
   status = window['status']
-  if x == '0' and y == '0': ### BAD config
-    print("BAD")
+  while(counter < addition):
+    time.sleep(sleep/addition)
+    counter += 1
+    ### GOOD config
     status.update(status_update)
-    progress_bar.update(visible=False)
-  else:  ### GOOD config
-    status.update(status_update)
-    progress_bar.update(x, y)
+    progress_bar.update(progress+counter,100)
+  progress = progress + counter
+
+def bad_config(status_update):
+      sg.theme(PSG_THEME)  # please make your windows colorful
+      column_to_be_centered = [[sg.Text('', key='status',font=FONT)],
+                          [sg.ProgressBar(1, orientation='h', size=(40, 30), key='progress')],]
+      layout = [[sg.VPush()],
+            [sg.Push(), sg.Column(column_to_be_centered,element_justification='c'), sg.Push()],
+            [sg.VPush()]]
+      window = sg.Window('Controller Configurator', layout).Finalize()
+      progress_bar = window['progress']
+      status = window['status']
+      status.update(status_update)
+      progress_bar.update(visible=False)
+      time.sleep(4)
+      exit()
 
 def get_app_name():
-  font = ("Arial", 14)
-  font2 = ("Arial", 12)
-  sg.theme('GreenMono')  # please make your windows colorful
-  layout = [[sg.Text('Enter the new APP name, and press Enter:',font=font)],
-            [sg.Text('', size=(0, 0), font=font), sg.InputText(key='app_name', font=font2)],
-            [sg.Submit(font=font2), sg.Exit(font=font2)]]
+  sg.theme(PSG_THEME)  # please make your windows colorful
+  layout = [[sg.Text('Enter the new APP name, and press Enter:',font=FONT)],
+            [sg.Text('', size=(0, 0), font=FONT), sg.InputText(key='app_name', font=FONT2)],
+            [sg.Submit(font=FONT2), sg.Exit(font=FONT2)]]
   window = sg.Window('Controller Configurator', layout, finalize=True)
   event, values = window.read()
   app_name = values['app_name']
@@ -67,12 +84,11 @@ def get_app_name():
   return app_name
 
 def get_instance_group():
-  font = ("Arial", 14)
-  sg.theme('GreenMono')  # please make your windows colorful
-  layout = [[sg.Text('Choose the instance group, and press Enter:', font=font)],
-            [sg.Text('1: Test', font=font)],
-            [sg.Text('2: Prod', font=font)],
-            [sg.Text('', size=(0, 1), font=font), sg.InputText(key='instance_group', font=font)],
+  sg.theme(PSG_THEME)  # please make your windows colorful
+  layout = [[sg.Text('Choose the instance group, and press Enter:', font=FONT)],
+            [sg.Text('1: Test', font=FONT)],
+            [sg.Text('2: Prod', font=FONT)],
+            [sg.Text('', size=(0, 1), font=FONT), sg.InputText(key='instance_group', font=FONT)],
             [sg.Submit(), sg.Exit()]]
   window = sg.Window('Controller Configurator', layout, finalize=True)
   event, values = window.read()
@@ -81,13 +97,11 @@ def get_instance_group():
   return instance_group
 
 def hostname_backed_url():
-  font = ("Arial", 14)
-  font2 = ("Arial", 12)
-  sg.theme('GreenMono')  # please make your windows colorful
-  layout = [[sg.Text('Enter the APP URL (GW hostname) , and press Enter:', font=font)],
-            [sg.Text('', size=(0, 0), font=font), sg.InputText(key='hostname', font=font2)],
-            [sg.Text('Enter the backend URL, and press Enter:', font=font)],
-            [sg.Text('', size=(0, 0), font=font), sg.InputText(key='backed_url', font=font2)],
+  sg.theme(PSG_THEME)  # please make your windows colorful
+  layout = [[sg.Text('Enter the APP URL (GW hostname) , and press Enter:', font=FONT)],
+            [sg.Text('', size=(0, 0), font=FONT), sg.InputText(key='hostname', font=FONT2)],
+            [sg.Text('Enter the backend URL, and press Enter:', font=FONT)],
+            [sg.Text('', size=(0, 0), font=FONT), sg.InputText(key='backed_url', font=FONT2)],
             [sg.Submit(), sg.Exit()]]
   window = sg.Window('Controller Configurator', layout, finalize=True)
   event, values = window.read()
@@ -98,16 +112,13 @@ def hostname_backed_url():
 
 ### Login to Controller                                 
 def auth_controller():
-    font1 = ("Arial", 14)
-    font2 = ("Arial", 12)
-    hex_color_code = ''
-    sg.theme('GreenMono')  # please make your windows colorful
-    layout1 = [[sg.pin(sg.Text('Enter your user and password:',font=font1))],
-          [sg.Text('User:', size=(10),font=font2), sg.InputText(key='user',font=font2)],
-          [sg.Text('Password: ', size=(10),font=font2), sg.InputText('', key='passd', password_char='*', font=font2)],
-          [sg.StatusBar('', size=10, expand_x=True, key='Status',font=font2, background_color='light gray')],
-          [sg.Submit(font=font2), sg.Exit(font=font2)]]
-    window = sg.Window('Controller Configurator', layout1, finalize=True, enable_close_attempted_event=True)
+    sg.theme(PSG_THEME)  # please make your windows colorful
+    layout = [[sg.pin(sg.Text('Enter your user and password:',font=FONT))],
+          [sg.Text('User:', size=(10),font=FONT2), sg.InputText(key='user',font=FONT2)],
+          [sg.Text('Password: ', size=(10),font=FONT2), sg.InputText('', key='passd', password_char='*', font=FONT2)],
+          [sg.StatusBar('', size=10, expand_x=True, key='Status',font=FONT2, background_color='light gray')],
+          [sg.Submit(font=FONT2), sg.Exit(font=FONT2)]]
+    window = sg.Window('Controller Configurator', layout, finalize=True, enable_close_attempted_event=True)
     window['Status'].my_bg = sg.theme_text_element_background_color()
     status = window['Status']
     status.update(visible=False)
@@ -141,7 +152,6 @@ def auth_controller():
         time.sleep(3)
         window.close()
         exit()
-
     return session
 
 ### create new GW
@@ -208,13 +218,10 @@ def create_gw(session,hostname,gw_name,instance_group,environment,cert_choosen):
     response = session.post(endpoint, data=payload, headers=headers, verify=False)
     if (200 <= response.status_code <= 210):
       status_update = "OK - GW created"
-      progress_bar(1, 4,status_update)
-      time.sleep(5)
+      progress_barnew(25,status_update,5)
     else:
       status_update = "bad GW config"
-      progress_bar('0', '0', status_update)
-      time.sleep(5)
-      exit()
+      bad_config(status_update)
 
 ### create new App
 def create_app(session,app_name,environment):
@@ -231,13 +238,10 @@ def create_app(session,app_name,environment):
   response = session.post(endpoint, data=payload, headers=headers, verify=False)
   if (200 <= response.status_code <= 210):
     status_update = 'OK - APP created'
-    progress_bar(2, 4,status_update)
-    time.sleep(5)
+    progress_barnew(25,status_update,5)
   else:
     status_update = "bad APP config"
-    progress_bar('0', '0', status_update)
-    time.sleep(5)
-    exit()   
+    bad_config(status_update)  
 
 ### create new Component
 def create_comp(session,app_name,gw_name,environment,backed_url):
@@ -320,44 +324,26 @@ def create_comp(session,app_name,gw_name,environment,backed_url):
     response = session.post(endpoint, data=payload, headers=headers, verify=False)
     if (200 <= response.status_code <= 210):
       status_update = 'OK - Component created'
-      progress_bar(3, 4, status_update)
-      time.sleep(5)
+      progress_barnew(25,status_update,5)
     else:
       status_update = 'bad Component config'
-      progress_bar('0', '0', status_update)
-      time.sleep(5)
-      exit()
+      bad_config(status_update)
 
 def get_cert(CONTROLLER_FQDN,session,environment):
   headers = { 'content-type': "application/json" }
   endpoint = f"{CONTROLLER_FQDN}/api/v1/services/environments/{environment}/certs"
   response = session.get(endpoint,  headers=headers, verify=False).json()
-  json_data = response['items']
-  item = len(json_data)
-  certs = []
-  cert_link = []
-  while item !=0:
-    json_data = response['items'][item-1]['currentStatus']['certMetadata'][0]
-    json_data2 = response['items'][item-1]['metadata']['links']
-    for key, value in json_data.items():
-        if key == 'commonName':
-          certs.append(value)
-    for key, value in json_data2.items():
-        if key == 'rel':
-          cert_link.append(value)
-    item = item -1
-  font = ("Arial", 14)
-  font2 = ("Arial", 12)
-  sg.theme('GreenMono')  # please make your windows colorful
-  layout = [[sg.Text('Choose the CERT from the list, and press Enter:', font=font)],
-            [sg.Combo(certs, enable_events=True, key='CERT', font=font)]]
+  cert_items = response['items']
+  certs_adasha = {}
+  for cert in cert_items:
+    certs_adasha[cert['currentStatus']['certMetadata'][0]['commonName']]=cert['metadata']['links']['rel'].replace("/api/v1","") 
+  sg.theme(PSG_THEME)  # please make your windows colorful
+  layout = [[sg.Text('Choose the CERT from the list, and press Enter:', font=FONT)],
+            [sg.Combo(list(certs_adasha.keys()), enable_events=True, key='CERT', font=FONT)]]
   window = sg.Window('Controller Configurator', layout)
   event, values = window.Read()
-  cert_choosen = values['CERT']
+  time.sleep(1)
   window.Close()
-  cert_position = certs.index(cert_choosen)
-  cert_position = cert_link[int(cert_position)]
-  cert_position = cert_position.replace("/api/v1","")
-  return cert_position
+  return certs_adasha[values['CERT']]
 
 main_procedure()
