@@ -293,14 +293,33 @@ def create_comp(session,app_name,gw_name,environment,backed_url):
             {
               "directive": "#",
               "args": [
-                " Send WAF logs to Grafana"
+                " Send logs to Logstash"
               ]
             },
             {
               "directive": "access_log",
               "args": [
-                "syslog:server=172.17.0.1:515",
-                "syslog-adasha"
+                "syslog:server=10.32.6.56:516,tag=nginx_access",
+                "ssyslog-adasha"
+              ]
+            },
+            {
+              "directive": "error_log",
+              "args": [
+                "syslog:server=10.32.6.56:516,tag=nginx_error"
+              ]
+            },
+            {
+              "directive": "#",
+              "args": [
+                " Send WAF logs to Grafana"
+              ]
+            },
+            {
+              "directive": "app_protect_security_log",
+              "args": [
+                "/var/log/nap-format.json",
+                "yslog:server=10.32.6.56:515"
               ]
             }
           ]
@@ -317,7 +336,6 @@ def create_comp(session,app_name,gw_name,environment,backed_url):
     }
   }
 }
-
     headers = { 'content-type': "application/json" }
     endpoint = f"{CONTROLLER_FQDN}/api/v1/services/environments/{environment}/apps/{app_name}/components"
     payload=json.dumps(payload)
